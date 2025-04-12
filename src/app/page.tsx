@@ -1,158 +1,84 @@
+// Sofascore tarzı: Modern, logolu, responsive Canlı Maç Uygulaması
+
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import MatchCard from '../components/MatchCard';
 
-type Match = {
-  fixture: {
-    id: number;
-    date: string;
-    status: {
-      long: string;
-      short: string;
-      elapsed: number;
-    };
-  };
-  league: {
-    name: string;
-    country: string;
-  };
-  teams: {
-    home: { name: string; logo: string };
-    away: { name: string; logo: string };
-  };
-  goals: {
-    home: number;
-    away: number;
-  };
-};
-
-const COUNTRY_FILTERS = [
-  'Turkey',
-  'England',
-  'Spain',
-  'Germany',
-  'Portugal',
-  'Italy',
-  'France',
-  'Netherlands',
-  'Belgium',
-  'Brazil',
-  'Argentina',
-  'Scotland',
-  'USA',
-  'Japan',
-  'South Korea',
-  'Mexico',
-  'Switzerland',
-];
-
-export default function HomePage() {
-  const [matchesByDate, setMatchesByDate] = useState<{ [key: string]: Match[] }>({});
-  const [selectedCountry, setSelectedCountry] = useState<string>('All');
+export default function LiveFootballScores() {
+  const [matches, setMatches] = useState([]);
 
   useEffect(() => {
-    const fetchMatchesForDate = async (date: string) => {
+    const fetchLiveMatches = async () => {
       try {
-        const res = await fetch(`https://v3.football.api-sports.io/fixtures?date=${date}`, {
+        const response = await fetch('https://v3.football.api-sports.io/fixtures?live=all', {
           method: 'GET',
           headers: {
             'x-apisports-key': 'e0554e4b6823032fe331f955d5be4d58'
           }
         });
-        const data = await res.json();
-        return data.response as Match[];
-      } catch (err) {
-        console.error(`Veri çekilemedi (${date}):`, err);
-        return [];
+
+        const data = await response.json();
+        setMatches(data.response);
+      } catch (error) {
+        console.error('API çekiminde hata:', error);
       }
     };
 
-    const formatDate = (offset: number) => {
-      const d = new Date();
-      d.setDate(d.getDate() + offset);
-      return d.toISOString().split('T')[0];
-    };
-
-    const fetchAllDates = async () => {
-      const dates = {
-        yesterday: formatDate(-1),
-        today: formatDate(0),
-        tomorrow: formatDate(1),
-      };
-
-      const [yesterdayMatches, todayMatches, tomorrowMatches] = await Promise.all([
-        fetchMatchesForDate(dates.yesterday),
-        fetchMatchesForDate(dates.today),
-        fetchMatchesForDate(dates.tomorrow),
-      ]);
-
-      setMatchesByDate({
-        [dates.yesterday]: yesterdayMatches,
-        [dates.today]: todayMatches,
-        [dates.tomorrow]: tomorrowMatches,
-      });
-    };
-
-    fetchAllDates();
+    fetchLiveMatches();
+    const interval = setInterval(fetchLiveMatches, 30000);
+    return () => clearInterval(interval);
   }, []);
 
-  const formatReadableDate = (iso: string) => {
-    const date = new Date(iso);
-    return date.toLocaleDateString('tr-TR', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
-  const filterByCountry = (matches: Match[]) => {
-    if (selectedCountry === 'All') return matches;
-    return matches.filter((match) => match.league.country === selectedCountry);
+  const getStatusColor = (status) => {
+    if (status === 'Match Finished' || status === 'FT') return 'bg-gray-400';
+    if (status === 'Not Started' || status === 'NS') return 'bg-yellow-500';
+    return 'bg-green-500';
   };
 
   return (
-    <main className="max-w-5xl mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">Canlı Futbol Maçları</h1>
-
-      {/* FİLTRE */}
-      <div className="mb-6">
-        <label className="block mb-2 font-medium">Ülkeye göre filtrele:</label>
-        <select
-          value={selectedCountry}
-          onChange={(e) => setSelectedCountry(e.target.value)}
-          className="p-2 border rounded"
-        >
-          <option value="All">Tüm Ülkeler</option>
-          {COUNTRY_FILTERS.map((country) => (
-            <option key={country} value={country}>
-              {country}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* MAÇ LİSTELERİ */}
-      {Object.entries(matchesByDate).map(([date, matches]) => {
-        const filtered = filterByCountry(matches);
-        return (
-          <section key={date} className="mb-10">
-           <h2 className="text-xl font-semibold text-gray-700 mb-3 border-b pb-1">
-  {formatReadableDate(date)}
-</h2>
-            {filtered.length === 0 ? (
-              <p className="text-sm text-gray-500">Maç bulunamadı.</p>
-            ) : (
-              <div className="space-y-4">
-                {filtered.map((match) => (
-                  <MatchCard key={match.fixture.id} match={match} />
-                ))}
+    <div className="p-4 max-w-5xl mx-auto">
+      <h1 className="text-3xl font-bold mb-6 text-center">Canlı Futbol Maçları</h1>
+      {matches.length === 0 ? (
+        <p className="text-center text-gray-500">Şu anda canlı maç bulunmamaktadır.</p>
+      ) : (
+        <div className="space-y-4">
+          {matches.map((match) => (
+            <div
+              key={match.fixture.id}
+              className="bg-white p-4 rounded-xl shadow-md border hover:shadow-lg transition"
+            >
+              <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
+                <span>{match.league.country} • {match.league.name}</span>
+                <span className={`text-white text-xs px-2 py-0.5 rounded-full ${getStatusColor(match.fixture.status.short)}`}>
+                  {match.fixture.status.long}
+                </span>
               </div>
-            )}
-          </section>
-        );
-      })}
-    </main>
+
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2 w-1/3">
+                  <img src={match.teams.home.logo} alt="home" className="w-6 h-6" />
+                  <span className="truncate font-medium text-sm">{match.teams.home.name}</span>
+                </div>
+
+                <div className="w-1/3 text-center text-2xl font-bold text-gray-800">
+                  {match.goals.home} - {match.goals.away}
+                </div>
+
+                <div className="flex items-center gap-2 justify-end w-1/3">
+                  <span className="truncate text-sm text-right font-medium">{match.teams.away.name}</span>
+                  <img src={match.teams.away.logo} alt="away" className="w-6 h-6" />
+                </div>
+              </div>
+
+              {match.fixture.status.elapsed && (
+                <div className="text-center text-xs text-gray-400 mt-2">
+                  {match.fixture.status.elapsed} dk oynandı
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
