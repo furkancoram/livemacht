@@ -4,4 +4,17 @@
 
 body {
   @apply bg-gray-100 text-gray-900;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+h1, h2 {
+  @apply text-gray-800;
+}
+
+select {
+  @apply bg-white border border-gray-300 rounded shadow-sm;
+}
+
+img {
+  @apply object-contain;
 }
