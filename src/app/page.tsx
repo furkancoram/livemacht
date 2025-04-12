@@ -138,7 +138,9 @@ export default function HomePage() {
         const filtered = filterByCountry(matches);
         return (
           <section key={date} className="mb-10">
-            <h2 className="text-2xl font-semibold mb-4">{formatReadableDate(date)}</h2>
+           <h2 className="text-xl font-semibold text-gray-700 mb-3 border-b pb-1">
+  {formatReadableDate(date)}
+</h2>
             {filtered.length === 0 ? (
               <p className="text-sm text-gray-500">Maç bulunamadı.</p>
             ) : (
