@@ -14,6 +14,7 @@ type Match = {
   };
   league: {
     name: string;
+    country: string;
   };
   teams: {
     home: { name: string };
@@ -25,8 +26,29 @@ type Match = {
   };
 };
 
+const COUNTRY_FILTERS = [
+  'Turkey',
+  'England',
+  'Spain',
+  'Germany',
+  'Portugal',
+  'Italy',
+  'France',
+  'Netherlands',
+  'Belgium',
+  'Brazil',
+  'Argentina',
+  'Scotland',
+  'USA',
+  'Japan',
+  'South Korea',
+  'Mexico',
+  'Switzerland',
+];
+
 export default function HomePage() {
   const [matchesByDate, setMatchesByDate] = useState<{ [key: string]: Match[] }>({});
+  const [selectedCountry, setSelectedCountry] = useState<string>('All');
 
   useEffect(() => {
     const fetchMatchesForDate = async (date: string) => {
@@ -84,41 +106,65 @@ export default function HomePage() {
     });
   };
 
+  const filterByCountry = (matches: Match[]) => {
+    if (selectedCountry === 'All') return matches;
+    return matches.filter((match) => match.league.country === selectedCountry);
+  };
+
   return (
     <main className="max-w-5xl mx-auto p-4">
       <h1 className="text-3xl font-bold mb-6">Tüm Maçlar (Dün - Bugün - Yarın)</h1>
 
-      {Object.entries(matchesByDate).map(([date, matches]) => (
-        <section key={date} className="mb-10">
-          <h2 className="text-2xl font-semibold mb-4">{formatReadableDate(date)}</h2>
-          {matches.length === 0 ? (
-            <p className="text-sm text-gray-500">Maç bulunamadı.</p>
-          ) : (
-            <div className="space-y-4">
-              {matches.map((match) => (
-                <div
-                  key={match.fixture.id}
-                  className="bg-white p-4 rounded shadow-sm border flex flex-col"
-                >
-                  <div className="flex justify-between font-medium text-lg">
-                    <span>{match.teams.home.name}</span>
-                    <span>
-                      {match.goals.home} - {match.goals.away}
-                    </span>
-                    <span>{match.teams.away.name}</span>
+      {/* FİLTRE MENÜSÜ */}
+      <div className="mb-6">
+        <label className="block mb-2 font-medium">Ülkeye göre filtrele:</label>
+        <select
+          value={selectedCountry}
+          onChange={(e) => setSelectedCountry(e.target.value)}
+          className="p-2 border rounded"
+        >
+          <option value="All">Tüm Ülkeler</option>
+          {COUNTRY_FILTERS.map((country) => (
+            <option key={country} value={country}>
+              {country}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* MAÇLAR */}
+      {Object.entries(matchesByDate).map(([date, matches]) => {
+        const filtered = filterByCountry(matches);
+        return (
+          <section key={date} className="mb-10">
+            <h2 className="text-2xl font-semibold mb-4">{formatReadableDate(date)}</h2>
+            {filtered.length === 0 ? (
+              <p className="text-sm text-gray-500">Maç bulunamadı.</p>
+            ) : (
+              <div className="space-y-4">
+                {filtered.map((match) => (
+                  <div
+                    key={match.fixture.id}
+                    className="bg-white p-4 rounded shadow-sm border flex flex-col"
+                  >
+                    <div className="flex justify-between font-medium text-lg">
+                      <span>{match.teams.home.name}</span>
+                      <span>
+                        {match.goals.home} - {match.goals.away}
+                      </span>
+                      <span>{match.teams.away.name}</span>
+                    </div>
+                    <div className="text-sm text-gray-600 mt-1">
+                      {match.league.country} • {match.league.name} • {match.fixture.status.long}{' '}
+                      {match.fixture.status.elapsed ? `(${match.fixture.status.elapsed} dk)` : ''}
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-600 mt-1">
-                    {match.league.name} • {match.fixture.status.long}{' '}
-                    {match.fixture.status.elapsed
-                      ? `(${match.fixture.status.elapsed} dk)`
-                      : ''}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      ))}
+                ))}
+              </div>
+            )}
+          </section>
+        );
+      })}
     </main>
   );
 }
