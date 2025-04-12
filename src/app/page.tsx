@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import MatchCard from '../components/MatchCard';
 
 type Match = {
   fixture: {
@@ -17,8 +18,8 @@ type Match = {
     country: string;
   };
   teams: {
-    home: { name: string };
-    away: { name: string };
+    home: { name: string; logo: string };
+    away: { name: string; logo: string };
   };
   goals: {
     home: number;
@@ -113,9 +114,9 @@ export default function HomePage() {
 
   return (
     <main className="max-w-5xl mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">Tüm Maçlar (Dün - Bugün - Yarın)</h1>
+      <h1 className="text-3xl font-bold mb-6">Canlı Futbol Maçları</h1>
 
-      {/* FİLTRE MENÜSÜ */}
+      {/* FİLTRE */}
       <div className="mb-6">
         <label className="block mb-2 font-medium">Ülkeye göre filtrele:</label>
         <select
@@ -132,7 +133,7 @@ export default function HomePage() {
         </select>
       </div>
 
-      {/* MAÇLAR */}
+      {/* MAÇ LİSTELERİ */}
       {Object.entries(matchesByDate).map(([date, matches]) => {
         const filtered = filterByCountry(matches);
         return (
@@ -143,22 +144,7 @@ export default function HomePage() {
             ) : (
               <div className="space-y-4">
                 {filtered.map((match) => (
-                  <div
-                    key={match.fixture.id}
-                    className="bg-white p-4 rounded shadow-sm border flex flex-col"
-                  >
-                    <div className="flex justify-between font-medium text-lg">
-                      <span>{match.teams.home.name}</span>
-                      <span>
-                        {match.goals.home} - {match.goals.away}
-                      </span>
-                      <span>{match.teams.away.name}</span>
-                    </div>
-                    <div className="text-sm text-gray-600 mt-1">
-                      {match.league.country} • {match.league.name} • {match.fixture.status.long}{' '}
-                      {match.fixture.status.elapsed ? `(${match.fixture.status.elapsed} dk)` : ''}
-                    </div>
-                  </div>
+                  <MatchCard key={match.fixture.id} match={match} />
                 ))}
               </div>
             )}
